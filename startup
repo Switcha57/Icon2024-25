@@ -1,0 +1,1 @@
+docker run --rm --volume "$(Get-Location):/data" pandoc/extra Documentazione.md -o example.pdf --template eisvogel --listings
