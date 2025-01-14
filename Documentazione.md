@@ -39,12 +39,25 @@ Il dataset dataset-incendi-vito-martella.csv contiene informazioni sugli incendi
 
 ## Preprocessing
 
+Il dataset non è malformato, non presente ne righe con valori nulli ne righe duplicate
+
+![Numero di incendi per anno](plots/plot_3.svg)
+
+![Numero di incendi per comune](plots/plot_4.svg)
+
+![Distribuzione delle tipologie di incendi](plots/plot_5.svg)
+
+![Numero di incendi per mese](plots/plot_6.svg)
+
+![Distribuzione dei Codici Colore](plots/plot_14.png)
 
 
+# Apprendimento Supervisionato
 
 
+# Modelli Probabilistici e NN 
 
-
+# Apprendimento non Supervisionato 
 
 
 
