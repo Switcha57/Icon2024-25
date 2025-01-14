@@ -120,32 +120,28 @@ cols_to_unpack = [
 ]
 
 # Estrai le colonne specificate in y
-y_1= select(X_encoded, cols_to_unpack)
+y_1 = select(X_encoded, cols_to_unpack)
 
 # Estrai le altre colonne in X
 X_1 = select(X_encoded, Not(cols_to_unpack))
 y, X = unpack(X_imputed, ==(Symbol("CODICE COL")), rng=778085)
 
-SM= models(matching(X, y)) # supervised model
-NNmodels = models(matching(X_1, y_1))# neural netwprd
+SM = models(matching(X, y)) # supervised model
+NNmodels = models(matching(X_1, y_1))# neural network
 
 ## 
 #Pkg.add("SymbolicRegression")
 MultitargetSRRegressor = @load MultitargetSRRegressor pkg = SymbolicRegression
 model1 = MultitargetSRRegressor()
 
-split_index = Int(round(0.8 * nrow(X_1)))
-trainX_1 = first(X_1, split_index)
-testX_1 = last(X_1, nrow(X_1) - split_index)
 
-trainY_1 = first(y_1, split_index)
-testY_1 = last(y_1, nrow(y_1) - split_index)
+MSRRloaded = machine(model1, X_1, y_1)
+NIter_lambda = range(model1, :niterations, lower=10, upper=15, scale=log)
 
-MSRRloaded = machine(model1, trainX_1, trainY_1)
+curve = MLJ.learning_curve(MSRRloaded, range=NIter_lambda, resolution=5, measure=SymbolicRegression.L2DistLoss)
 
-fit!(MSRRloaded)
-
-r = report(MSRRloaded)
-for (output_index, (eq, i)) in enumerate(zip(r.equation_strings, r.best_idx))
-    println("Equation used for ", output_index, ": ", eq[i])
-end
+plot(curve.parameter_values,
+    curve.measurements,
+    xlab=curve.parameter_name,
+    xscale=curve.parameter_scale,
+    ylab="CV estimate of RMS error")
