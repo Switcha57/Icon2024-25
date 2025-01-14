@@ -96,52 +96,34 @@ select!(data, Not(:DATA))
 select!(data, Not(:PROV))
 
 select!(data, Not(Symbol("LOCALITA'")))
-X_coerced = coerce(data, :TIPOLOGIA => Multiclass, Symbol("CODICE COL") => Multiclass);
+data[!, :TIPOLOGIA] = Int64.(replace(data[!, :TIPOLOGIA], "Bosco" => 0, "Canneto" => 1, "Macchia" => 2))
+
+X_coerced = coerce(data, Symbol("CODICE COL") => Multiclass);
 imputer = FillImputer()
 mach = machine(imputer, X_coerced) |> fit!
 X_imputed = MLJ.transform(mach, X_coerced);
 
 
-encoder = ContinuousEncoder()
-mach = machine(encoder, X_imputed) |> fit!
-X_encoded = MLJ.transform(mach, X_imputed)
-file_path = "dataset-incendi-vito-martella-preprocessed.csv"
-CSV.write(file_path, X_encoded)
-
-#y, X = unpack(X_encoded, ==([Symbol("CODICE COL__Arancione"), Symbol("CODICE COL__Bianco"), Symbol("CODICE_COL__Giallo"), Symbol("CODICE_COL__Rosso"), Symbol("CODICE_COL__Verde")]), rng=778085);
-
-# Definisci le colonne da separare
-cols_to_unpack = [
-    Symbol("CODICE COL__Arancione"),
-    Symbol("CODICE COL__Bianco"),
-    Symbol("CODICE COL__Giallo"),
-    Symbol("CODICE COL__Rosso"),
-    Symbol("CODICE COL__Verde")
-]
-
-# Estrai le colonne specificate in y
-y_1 = select(X_encoded, cols_to_unpack)
-
-# Estrai le altre colonne in X
-X_1 = select(X_encoded, Not(cols_to_unpack))
 y, X = unpack(X_imputed, ==(Symbol("CODICE COL")), rng=778085)
 
-SM = models(matching(X, y)) # supervised model
-NNmodels = models(matching(X_1, y_1))# neural network
+# supervised Learning  Decision Tree Classifier
+#Pkg.add("MLJDecisionTreeInterface")
+#Pkg.add("MLJModels")
+model = (@load DecisionTreeClassifier pkg = DecisionTree)()
+model_constant = (@load ConstantClassifier pkg = MLJModels)()
 
-## 
-#Pkg.add("SymbolicRegression")
-MultitargetSRRegressor = @load MultitargetSRRegressor pkg = SymbolicRegression
-model1 = MultitargetSRRegressor()
+mach = machine(model, X, y)
 
+max_depth_lambda = range(model, :max_depth, lower=1, upper=150, scale=:log10)
+curve = MLJ.learning_curve(mach;
+     range=max_depth_lambda,
+    measure=log_loss)
+mach_constant = machine(model_constant, X, y)
 
-MSRRloaded = machine(model1, X_1, y_1)
-NIter_lambda = range(model1, :niterations, lower=10, upper=15, scale=log)
+fit!(mach_constant)
+y_pred_constant = predict(mach_constant, X)
+log_loss_constant = LogLoss()(y_pred_constant,y)
 
-curve = MLJ.learning_curve(MSRRloaded, range=NIter_lambda, resolution=5, measure=SymbolicRegression.L2DistLoss)
+plot(curve.parameter_values, curve.measurements, label="Decision Tree", xlabel="Max Depth", ylabel="Log Loss", title="Learning Curve")
 
-plot(curve.parameter_values,
-    curve.measurements,
-    xlab=curve.parameter_name,
-    xscale=curve.parameter_scale,
-    ylab="CV estimate of RMS error")
+plot!([1, 150], [log_loss_constant, log_loss_constant], label="Constant Classifier", linestyle=:dash)
