@@ -55,10 +55,11 @@ Il dataset non è malformato, non presente ne righe con valori nulli ne righe du
 # Apprendimento Supervisionato
 
 
-# Modelli Probabilistici e NN 
+# Neural Network 
+## feed Forward 
 
-# Apprendimento non Supervisionato 
-
+# Modelli Compositi
+## Bagging 
 
 
 

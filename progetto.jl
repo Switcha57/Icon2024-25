@@ -109,21 +109,44 @@ y, X = unpack(X_imputed, ==(Symbol("CODICE COL")), rng=778085)
 # supervised Learning  Decision Tree Classifier
 #Pkg.add("MLJDecisionTreeInterface")
 #Pkg.add("MLJModels")
+#Pkg.add("BetaML")
 model = (@load DecisionTreeClassifier pkg = DecisionTree)()
 model_constant = (@load ConstantClassifier pkg = MLJModels)()
 
 mach = machine(model, X, y)
 
-max_depth_lambda = range(model, :max_depth, lower=1, upper=150, scale=:log10)
-curve = MLJ.learning_curve(mach;
-     range=max_depth_lambda,
-    measure=log_loss)
+max_depth_lambda = range(model, :max_depth, lower=1, upper=10, scale=:log10)
+# curve = MLJ.learning_curve(mach;
+#      range=max_depth_lambda,
+#     measure=log_loss)
 mach_constant = machine(model_constant, X, y)
 
 fit!(mach_constant)
 y_pred_constant = predict(mach_constant, X)
 log_loss_constant = LogLoss()(y_pred_constant,y)
 
-plot(curve.parameter_values, curve.measurements, label="Decision Tree", xlabel="Max Depth", ylabel="Log Loss", title="Learning Curve")
+# plot(curve.parameter_values, curve.measurements, label="Decision Tree", xlabel="Max Depth", ylabel="Log Loss", title="Learning Curve")
 
-plot!([1, 150], [log_loss_constant, log_loss_constant], label="Constant Classifier", linestyle=:dash)
+# plot!([1, 10], [log_loss_constant, log_loss_constant], label="Constant Classifier", linestyle=:dash)
+
+
+# modelNNC = (@load NeuralNetworkClassifier pkg = "BetaML" verbosity = 0)()
+# mach_nn = machine(modelNNC, X, y)
+# max_epoch_lambda = range(modelNNC, :epochs, lower=10, upper=300, scale=:log10)
+# fit!(mach_nn)
+# curve_nn = MLJ.learning_curve(mach_nn,
+# range=max_epoch_lambda,
+#     measure=log_loss)
+# plot(curve_nn.parameter_values, curve_nn.measurements, label="Neural Network Classifier Fitted", xlabel="epochs", ylabel="Log Loss", title="Learning Curve")
+# plot!([1, 300], [log_loss_constant, log_loss_constant], label="Constant Classifier", linestyle=:dash)
+modelType = @load RandomForestClassifier pkg = "BetaML" verbosity = 0
+model_RFC = modelType()
+machRFC = machine(model_RFC, X,y);
+fit!(machRFC);
+
+max_depth_lambda = range(model, :max_depth, lower=1, upper=30, scale=:log10)
+curve_RFC = MLJ.learning_curve(machRFC;
+      range=max_depth_lambda,
+     measure=log_loss)
+plot(curve_RFC.parameter_values, curve_RFC.measurements, label="Random Forest Classifier", xlabel="max_Depth", ylabel="Log Loss", title="Learning Curve")
+plot!([1, 30], [log_loss_constant, log_loss_constant], label="Constant Classifier", linestyle=:dash)
